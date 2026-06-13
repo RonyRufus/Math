@@ -27,6 +27,9 @@ const DEFAULT_STATS: UserStats = {
     subtraction: 1000,
     multiplication: 1000,
     division: 1000,
+    squares: 1000,
+    roots: 1000,
+    algebra: 1000,
   },
   bestStreak: 0,
   totalXP: 0,
@@ -41,6 +44,9 @@ const OP_META = {
   subtraction: { name: 'Subtraction', symbol: '−', color: 'bg-amber-500/10 border-amber-500/30 text-amber-500 focus:ring-amber-500/40 glow-amber' },
   multiplication: { name: 'Multiplication', symbol: '×', color: 'bg-purple-500/10 border-purple-500/30 text-purple-400 focus:ring-purple-400/40 glow-purple' },
   division: { name: 'Division', symbol: '÷', color: 'bg-sky-500/10 border-sky-500/30 text-sky-400 focus:ring-sky-400/40 glow-sky' },
+  squares: { name: 'Squares', symbol: 'x²', color: 'bg-fuchsia-500/10 border-fuchsia-500/30 text-fuchsia-400 focus:ring-fuchsia-500/40 glow-fuchsia' },
+  roots: { name: 'Roots', symbol: '√x', color: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 focus:ring-cyan-500/40 glow-cyan' },
+  algebra: { name: 'Algebra', symbol: 'x=?', color: 'bg-rose-500/10 border-rose-500/30 text-rose-400 focus:ring-rose-500/40 glow-rose' },
 };
 
 export default function App() {
@@ -167,11 +173,9 @@ export default function App() {
   };
 
   // Calculate Consolidated Mental ELO (Average of their ratings)
+  const ratingsKeys = Object.keys(stats.ratings) as OperationType[];
   const averageRating = Math.round(
-    (stats.ratings.addition +
-     stats.ratings.subtraction +
-     stats.ratings.multiplication +
-     stats.ratings.division) / 4
+    ratingsKeys.reduce((sum, key) => sum + (stats.ratings[key] || 1000), 0) / (ratingsKeys.length || 1)
   );
 
   return (

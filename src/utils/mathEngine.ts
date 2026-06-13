@@ -30,6 +30,7 @@ export function generateQuestion(operation: OperationType, rating: number): Math
   let num2 = 0;
   let operandSymbol = '';
   let correctAnswer = 0;
+  let formula: string | undefined = undefined;
 
   switch (operation) {
     case 'addition':
@@ -211,6 +212,187 @@ export function generateQuestion(operation: OperationType, rating: number): Math
       // In division, num1 = correctAnswer * num2, so we always divide cleanly!
       num1 = correctAnswer * num2;
       break;
+
+    case 'squares':
+      operandSymbol = '²';
+      if (level === 1) {
+        // Level 1: 1 to 10
+        num1 = randomBetween(2, 10);
+      } else if (level === 2) {
+        // Level 2: 11 to 15
+        num1 = randomBetween(11, 15);
+      } else if (level === 3) {
+        // Level 3: 16 to 20
+        num1 = randomBetween(16, 20);
+      } else if (level === 4) {
+        // Level 4: multiples of 10 and 5
+        const base = randomBetween(5, 19) * 5; // 25 to 95
+        num1 = base;
+      } else if (level === 5) {
+        // Level 5: close to 10s (ends in 1 or 9, 21 to 99)
+        const tens = randomBetween(2, 9) * 10;
+        num1 = tens + (Math.random() > 0.5 ? 1 : -1);
+      } else if (level === 6) {
+        // Level 6: 21 to 30 (excluding 25/30)
+        const candidates = [21, 22, 23, 24, 26, 27, 28, 29];
+        num1 = candidates[Math.floor(Math.random() * candidates.length)];
+      } else if (level === 7) {
+        // Level 7: 31 to 50 (non-multiples of 5 or 10)
+        let val;
+        do {
+          val = randomBetween(31, 50);
+        } while (val % 5 === 0 || val % 10 === 0);
+        num1 = val;
+      } else {
+        // Level 8: 51 to 100
+        let val;
+        do {
+          val = randomBetween(51, 100);
+        } while (val % 5 === 0 || val % 10 === 0 || val % 10 === 1 || val % 10 === 9);
+        num1 = val;
+      }
+      correctAnswer = num1 * num1;
+      num2 = 2; // Exponent representation
+      break;
+
+    case 'roots':
+      operandSymbol = '√';
+      if (level === 1) {
+        // Level 1: result is 2 to 10
+        correctAnswer = randomBetween(2, 10);
+      } else if (level === 2) {
+        // Level 2: result is 11 to 15
+        correctAnswer = randomBetween(11, 15);
+      } else if (level === 3) {
+        // Level 3: result is 16 to 20
+        correctAnswer = randomBetween(16, 20);
+      } else if (level === 4) {
+        // Level 4: result is multiples of 10 (20 to 90)
+        correctAnswer = randomBetween(2, 9) * 10;
+      } else if (level === 5) {
+        // Level 5: result ends in 5 (15 to 95)
+        correctAnswer = randomBetween(1, 9) * 10 + 5;
+      } else if (level === 6) {
+        // Level 6: result 21 to 30
+        correctAnswer = randomBetween(21, 30);
+      } else if (level === 7) {
+        // Level 7: result 31 to 50
+        correctAnswer = randomBetween(31, 50);
+      } else {
+        // Level 8: result 51 to 100
+        correctAnswer = randomBetween(51, 100);
+      }
+      num1 = correctAnswer * correctAnswer; // Square under the radical (e.g. √144 = 12)
+      num2 = 0;
+      break;
+
+    case 'algebra':
+      operandSymbol = 'alg';
+      if (level === 1) {
+        // Level 1: x + a = b or x - a = b (positive answers, within 20)
+        const x = randomBetween(2, 15);
+        const a = randomBetween(1, 15);
+        if (Math.random() > 0.5) {
+          const b = x + a;
+          formula = `x + ${a} = ${b}`;
+        } else {
+          const b = x - a;
+          formula = `x - ${a} = ${b}`;
+        }
+        correctAnswer = x;
+        num1 = a;
+      } else if (level === 2) {
+        // Level 2: a - x = b or a + x = b (might have clean negative answers)
+        const x = randomBetween(-8, 12);
+        const ans = x === 0 ? 5 : x;
+        const a = randomBetween(5, 20);
+        if (Math.random() > 0.5) {
+          const b = a - ans;
+          formula = `${a} - x = ${b}`;
+        } else {
+          const b = a + ans;
+          formula = `${a} + x = ${b}`;
+        }
+        correctAnswer = ans;
+        num1 = a;
+      } else if (level === 3) {
+        // Level 3: ax = b or x / a = b (simple divisions)
+        if (Math.random() > 0.5) {
+          const a = randomBetween(2, 9);
+          const x = randomBetween(2, 12);
+          const b = a * x;
+          formula = `${a}x = ${b}`;
+          correctAnswer = x;
+          num1 = a;
+        } else {
+          const a = randomBetween(2, 5);
+          const x = randomBetween(12, 40);
+          const b = Math.floor(x / a) || 5;
+          const cleanX = b * a;
+          formula = `x / ${a} = ${b}`;
+          correctAnswer = cleanX;
+          num1 = a;
+        }
+      } else if (level === 4) {
+        // Level 4: ax + b = c (positive coefficients and results)
+        const a = randomBetween(2, 7);
+        const x = randomBetween(2, 10);
+        const b = randomBetween(1, 15);
+        const c = a * x + b;
+        formula = `${a}x + ${b} = ${c}`;
+        correctAnswer = x;
+        num1 = a;
+      } else if (level === 5) {
+        // Level 5: ax - b = c (negative results possible)
+        const a = randomBetween(2, 8);
+        const x = randomBetween(-5, 9);
+        const ans = x === 0 ? 3 : x;
+        const b = randomBetween(2, 15);
+        const c = a * ans - b;
+        formula = `${a}x - ${b} = ${c}`;
+        correctAnswer = ans;
+        num1 = a;
+      } else if (level === 6) {
+        // Level 6: ax + b = cx + d (two x terms, clean results)
+        const x = randomBetween(-5, 9);
+        const ans = x === 0 ? 4 : x;
+        const c = randomBetween(2, 5);
+        const a = c + randomBetween(1, 4);
+        const b = randomBetween(1, 15);
+        const d = (a - c) * ans + b;
+        formula = `${a}x + ${b} = ${c}x + ${d}`;
+        correctAnswer = ans;
+        num1 = a;
+        num2 = c;
+      } else if (level === 7) {
+        // Level 7: parenthesis format a(x + b) = c
+        const a = randomBetween(2, 5);
+        const x = randomBetween(-5, 12);
+        const ans = x === 0 ? 5 : x;
+        const b = randomBetween(1, 8);
+        const c = a * (ans + b);
+        formula = `${a}(x + ${b}) = ${c}`;
+        correctAnswer = ans;
+        num1 = a;
+        num2 = b;
+      } else {
+        // Level 8: ax - b = cx + d (and negative outcomes)
+        const x = randomBetween(-10, 15);
+        const ans = x === 0 ? 7 : x;
+        const c = randomBetween(2, 6);
+        const a = c + randomBetween(1, 5);
+        const b = randomBetween(3, 20);
+        const d = (a - c) * ans - b;
+        if (d >= 0) {
+          formula = `${a}x - ${b} = ${c}x + ${d}`;
+        } else {
+          formula = `${a}x - ${b} = ${c}x - ${Math.abs(d)}`;
+        }
+        correctAnswer = ans;
+        num1 = a;
+        num2 = c;
+      }
+      break;
   }
 
   return {
@@ -222,6 +404,7 @@ export function generateQuestion(operation: OperationType, rating: number): Math
     correctAnswer,
     difficultyLevel: level,
     createdAt: Date.now(),
+    formula,
   };
 }
 

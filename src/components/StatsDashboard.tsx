@@ -15,6 +15,9 @@ const OPERATION_META = {
   subtraction: { name: 'Subtraction', color: 'from-amber-500 to-orange-400', txt: 'text-amber-400', bg: 'bg-amber-500/10' },
   multiplication: { name: 'Multiplication', color: 'from-purple-500 to-indigo-400', txt: 'text-purple-400', bg: 'bg-purple-500/10' },
   division: { name: 'Division', color: 'from-sky-500 to-blue-400', txt: 'text-sky-400', bg: 'bg-sky-500/10' },
+  squares: { name: 'Squares', color: 'from-fuchsia-500 to-pink-500', txt: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' },
+  roots: { name: 'Roots', color: 'from-cyan-500 to-teal-400', txt: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+  algebra: { name: 'Algebra', color: 'from-rose-500 to-rose-400', txt: 'text-rose-400', bg: 'bg-rose-500/10' },
 };
 
 function getLevelLabel(level: number): string {

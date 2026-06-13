@@ -1,4 +1,4 @@
-export type OperationType = 'addition' | 'subtraction' | 'multiplication' | 'division';
+export type OperationType = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'squares' | 'roots' | 'algebra';
 
 export interface MathQuestion {
   id: string;
@@ -9,6 +9,7 @@ export interface MathQuestion {
   correctAnswer: number;
   difficultyLevel: number;
   createdAt: number;
+  formula?: string; // Preformatted representation for complex formats (e.g. algebra, superscripts)
 }
 
 export interface QuestionResult {

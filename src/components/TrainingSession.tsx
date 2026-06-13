@@ -290,6 +290,9 @@ export default function TrainingSession({
       case 'subtraction': return 'border-amber-500/25 text-amber-500 bg-[#0F1115]/50 shadow-sm shadow-amber-950/5';
       case 'multiplication': return 'border-indigo-500/25 text-indigo-400 bg-[#0F1115]/50 shadow-sm shadow-indigo-950/5';
       case 'division': return 'border-sky-500/25 text-sky-400 bg-[#0F1115]/50 shadow-sm shadow-sky-950/5';
+      case 'squares': return 'border-fuchsia-500/25 text-fuchsia-400 bg-[#0F1115]/50 shadow-sm shadow-fuchsia-950/5';
+      case 'roots': return 'border-cyan-500/25 text-cyan-400 bg-[#0F1115]/50 shadow-sm shadow-cyan-950/5';
+      case 'algebra': return 'border-rose-500/25 text-rose-400 bg-[#0F1115]/50 shadow-sm shadow-rose-950/5';
     }
   };
 
@@ -440,10 +443,36 @@ export default function TrainingSession({
               >
                 {/* Equation numbers */}
                 <div id="math-expression" className="flex items-center gap-4 text-4xl sm:text-5xl font-mono font-medium text-white select-none">
-                  <span>{currentQuestion.num1}</span>
-                  <span className="text-slate-400 select-none text-3xl">{currentQuestion.operandSymbol}</span>
-                  <span>{currentQuestion.num2}</span>
-                  <span className="text-slate-400 text-3xl">=</span>
+                  {currentQuestion.operation === 'squares' ? (
+                    <div className="flex items-center">
+                      <span>{currentQuestion.num1}</span>
+                      <span className="text-slate-400 select-none text-2xl align-super -mt-4">²</span>
+                      <span className="text-slate-400 text-3xl ml-2 mr-2">=</span>
+                    </div>
+                  ) : currentQuestion.operation === 'roots' ? (
+                    <div className="flex items-center">
+                      <span className="text-slate-400 select-none text-4xl mr-1">√</span>
+                      <span className="underline decoration-slate-400 underline-offset-4">{currentQuestion.num1}</span>
+                      <span className="text-slate-400 text-3xl ml-2 mr-2">=</span>
+                    </div>
+                  ) : currentQuestion.operation === 'algebra' ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="text-2xl font-bold bg-slate-950/80 px-5 py-2.5 rounded-2xl border border-slate-800/80 text-slate-100 select-none text-center font-mono my-2 tracking-wide">
+                        {currentQuestion.formula}
+                      </div>
+                      <div className="flex items-center gap-2 text-2xl mt-1 select-none mr-2">
+                        <span className="text-indigo-400 text-xs uppercase tracking-widest font-mono font-bold mr-1 block">Solve:</span>
+                        <span className="text-white text-3xl font-mono font-bold">x =</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span>{currentQuestion.num1}</span>
+                      <span className="text-slate-400 select-none text-3xl">{currentQuestion.operandSymbol}</span>
+                      <span>{currentQuestion.num2}</span>
+                      <span className="text-slate-400 text-3xl mr-2">=</span>
+                    </>
+                  )}
 
                   {/* Typing display */}
                   <div className="min-w-20 min-h-12 border-b-2 border-dashed border-slate-700 flex items-center justify-center px-1 text-indigo-400 font-mono text-4xl relative">
@@ -475,7 +504,11 @@ export default function TrainingSession({
           onBackspace={handleBackspace}
           onClear={handleClear}
           onSubmit={handleSubmit}
-          onNegate={currentQuestion?.operation === 'subtraction' ? handleNegate : undefined}
+          onNegate={
+            currentQuestion?.operation === 'subtraction' || currentQuestion?.operation === 'algebra'
+              ? handleNegate
+              : undefined
+          }
           disabled={isPaused || timeLeft === 0 || !currentQuestion}
         />
       </div>

@@ -47,5 +47,6 @@ export interface UserStats {
     avgTimeMs: number;
     accuracy: number;
     operations: OperationType[];
+    ratingsSnapshot?: Record<OperationType, number>;
   }[];
 }

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { UserStats, OperationType } from '../types';
 import { ratingToLevel } from '../utils/mathEngine';
-import { Trophy, Zap, Clock, Activity, RotateCcw, Flame, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Trophy, Zap, Clock, Activity, RotateCcw, Flame, CheckCircle2 } from 'lucide-react';
+import DisciplineTrendChart from './DisciplineTrendChart';
 
 interface StatsDashboardProps {
   stats: UserStats;
@@ -52,14 +53,14 @@ export default function StatsDashboard({ stats, onResetStats, onClose }: StatsDa
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 15 }}
-      className="bg-[#0A0A0C] border border-slate-800/80 rounded-3xl p-6 shadow-2xl relative max-w-2xl w-full mx-auto overflow-hidden font-sans text-slate-100"
+      className="bg-[#0A0A0C] border border-slate-800/80 rounded-3xl p-6 shadow-2xl relative max-w-2xl w-full mx-auto overflow-hidden font-sans text-slate-100 max-h-[92vh] flex flex-col"
     >
       {/* Background radial gradients for premium ambient lighting */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 relative z-10">
+      <div className="flex justify-between items-center mb-5 relative z-10 shrink-0">
         <div>
           <h2 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-indigo-200 to-indigo-50 bg-clip-text text-transparent italic select-none">Practice Performance Stats</h2>
           <p className="text-slate-400 text-xs mt-1.5 font-medium">Adaptive rank measurements tuned to historical practice speed</p>
@@ -72,6 +73,9 @@ export default function StatsDashboard({ stats, onResetStats, onClose }: StatsDa
           <span className="text-slate-400 text-lg font-bold">×</span>
         </button>
       </div>
+
+      {/* Scrollable Container Body */}
+      <div className="flex-1 overflow-y-auto pr-1.5 space-y-6 scrollbar-thin scrollbar-thumb-slate-800/80 hover:scrollbar-thumb-slate-700 min-h-0 relative z-10 pb-2">
 
       {/* Key Metric Blocks */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 relative z-10">
@@ -226,7 +230,11 @@ export default function StatsDashboard({ stats, onResetStats, onClose }: StatsDa
         )}
       </div>
 
-      {/* Footer controls */}
+      {/* Discipline Trend Trajectory Chart added at bottom */}
+      <DisciplineTrendChart stats={stats} />
+    </div>
+
+    {/* Footer controls */}
       <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-900/60 z-10 relative">
         {!showConfirmReset ? (
           <button

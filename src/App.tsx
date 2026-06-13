@@ -257,6 +257,7 @@ export default function App() {
       avgTimeMs: correctCount > 0 ? totalSessionTime / correctCount : 0,
       accuracy: totalSessionQuestions > 0 ? Math.round((correctCount / totalSessionQuestions) * 100) : 0,
       operations: [...selectedOps],
+      ratingsSnapshot: { ...updatedRatings },
     };
 
     const updatedStats: UserStats = {

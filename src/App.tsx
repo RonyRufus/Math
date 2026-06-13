@@ -16,7 +16,8 @@ import {
   BarChart2, 
   Award,
   Zap,
-  RotateCcw
+  RotateCcw,
+  Lock
 } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY = 'math_trainer_user_stats';
@@ -49,24 +50,63 @@ const OP_META = {
   algebra: { name: 'Algebra', symbol: 'x=?', color: 'bg-rose-500/10 border-rose-500/30 text-rose-400 focus:ring-rose-500/40 glow-rose' },
 };
 
+interface UnlockRequirement {
+  xp: number;
+  rating?: number;
+  desc: string;
+}
+
+const OP_UNLOCKS: Record<OperationType, UnlockRequirement> = {
+  addition: { xp: 0, desc: 'Always Unlocked' },
+  subtraction: { xp: 45, rating: 1050, desc: '45 XP or 1050 ELO' },
+  multiplication: { xp: 180, rating: 1150, desc: '180 XP or 1150 ELO' },
+  division: { xp: 450, rating: 1250, desc: '450 XP or 1250 ELO' },
+  squares: { xp: 850, rating: 1350, desc: '850 XP or 1350 ELO' },
+  roots: { xp: 1400, rating: 1450, desc: '1400 XP or 1450 ELO' },
+  algebra: { xp: 2100, rating: 1550, desc: '2100 XP or 1550 ELO' },
+};
+
 export default function App() {
   const [gameState, setGameState] = useState<'setup' | 'playing' | 'review'>('setup');
   const [stats, setStats] = useState<UserStats>(DEFAULT_STATS);
-  const [selectedOps, setSelectedOps] = useState<OperationType[]>(['addition', 'subtraction']);
+  const [selectedOps, setSelectedOps] = useState<OperationType[]>(['addition']);
   const [timeLimit, setTimeLimit] = useState<number>(45); // default 45 seconds sprint
   const [showStats, setShowStats] = useState<boolean>(false);
   
   const [currentSessionResults, setCurrentSessionResults] = useState<QuestionResult[]>([]);
   const [currentSessionXPEarned, setCurrentSessionXPEarned] = useState<number>(0);
 
-  // Load stats from localStorage on startup
+  // Auto progression toggle
+  const [autoSelectAllUnlocks, setAutoSelectAllUnlocks] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('math_trainer_auto_unlocks_toggle');
+      return saved !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  // Helper function to query operation unlocked state dynamically
+  const isOperationUnlocked = (op: OperationType): boolean => {
+    const req = OP_UNLOCKS[op];
+    if (!req) return true;
+    if (stats.totalXP >= req.xp) return true;
+    if (req.rating) {
+      const ratings = Object.values(stats.ratings) as number[];
+      const maxRating = Math.max(...ratings);
+      if (maxRating >= req.rating) return true;
+    }
+    return false;
+  };
+
+  // Load stats from localStorage on startup and establish selection
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      let statsToUse = DEFAULT_STATS;
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Fallback for missing fields standard safeguard
-        const consolidated = {
+        statsToUse = {
           ...DEFAULT_STATS,
           ...parsed,
           ratings: {
@@ -74,12 +114,50 @@ export default function App() {
             ...(parsed.ratings || {}),
           },
         };
-        setStats(consolidated);
+        setStats(statsToUse);
+      }
+
+      // Compute initial unlocked ops based on parsed stats
+      const initialUnlocked = (Object.keys(OP_META) as OperationType[]).filter(op => {
+        const req = OP_UNLOCKS[op];
+        if (!req) return true;
+        if (statsToUse.totalXP >= req.xp) return true;
+        if (req.rating) {
+          const ratings = Object.values(statsToUse.ratings);
+          const maxRating = Math.max(...ratings);
+          if (maxRating >= req.rating) return true;
+        }
+        return false;
+      });
+
+      const savedAutoToggle = localStorage.getItem('math_trainer_auto_unlocks_toggle') !== 'false';
+      if (savedAutoToggle) {
+        setSelectedOps(initialUnlocked);
+      } else {
+        setSelectedOps(prev => {
+          const valid = prev.filter(op => initialUnlocked.includes(op));
+          return valid.length > 0 ? valid : ['addition'];
+        });
       }
     } catch (e) {
       console.warn('Failed to parse stats from localStorage', e);
     }
   }, []);
+
+  // Update selection continuously when stats or selection-mode updates
+  useEffect(() => {
+    const list = Object.keys(OP_META) as OperationType[];
+    const unlocked = list.filter(isOperationUnlocked);
+
+    if (autoSelectAllUnlocks) {
+      setSelectedOps(unlocked);
+    } else {
+      setSelectedOps((prev) => {
+        const pruned = prev.filter(op => unlocked.includes(op));
+        return pruned.length > 0 ? pruned : ['addition'];
+      });
+    }
+  }, [stats.totalXP, stats.ratings, autoSelectAllUnlocks]);
 
   // Sync user stats to localStorage
   const saveStatsToStorage = (updatedStats: UserStats) => {
@@ -91,22 +169,47 @@ export default function App() {
     }
   };
 
+  const handleToggleAutoSelectAllUnlocks = () => {
+    setAutoSelectAllUnlocks((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('math_trainer_auto_unlocks_toggle', String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
   // Trigger operation selection toggle
   const handleToggleOperation = (op: OperationType) => {
+    if (!isOperationUnlocked(op)) return;
+
     setSelectedOps((prev) => {
+      let nextOps;
       if (prev.includes(op)) {
         // Must have at least one active operation
         if (prev.length === 1) return prev;
-        return prev.filter((item) => item !== op);
+        nextOps = prev.filter((item) => item !== op);
       } else {
-        return [...prev, op];
+        nextOps = [...prev, op];
       }
+
+      // Since they manually chose, turn off autoSelectAllUnlocks
+      setAutoSelectAllUnlocks(false);
+      try {
+        localStorage.setItem('math_trainer_auto_unlocks_toggle', 'false');
+      } catch (e) {}
+
+      return nextOps;
     });
   };
 
   // Reset Lifetime Stats
   const handleResetStats = () => {
     saveStatsToStorage(DEFAULT_STATS);
+    setAutoSelectAllUnlocks(true);
+    try {
+      localStorage.setItem('math_trainer_auto_unlocks_toggle', 'true');
+    } catch (e) {}
   };
 
   // Finished game - Save results
@@ -252,50 +355,84 @@ export default function App() {
             <main className="space-y-5">
               {/* Op Selection */}
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono block mb-3.5">
-                  Select arithmetic disciplines
-                </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+                    Arithmetic Disciplines
+                  </label>
+                  <button
+                    id="auto-progression-toggle"
+                    type="button"
+                    onClick={handleToggleAutoSelectAllUnlocks}
+                    className={`text-[10px] px-2.5 py-0.5 rounded-full border font-mono font-bold uppercase transition-all duration-300 flex items-center gap-1.5 cursor-pointer select-none
+                      ${
+                        autoSelectAllUnlocks
+                          ? 'bg-teal-500/10 border-teal-500/30 text-teal-400 shadow shadow-teal-950/20'
+                          : 'bg-slate-950/40 border-slate-800 text-slate-500 hover:text-slate-400'
+                      }
+                    `}
+                  >
+                    <span className={`h-1 w-1 rounded-full inline-block ${autoSelectAllUnlocks ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
+                    Auto Progress Mode: {autoSelectAllUnlocks ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
                   {(Object.keys(OP_META) as OperationType[]).map((op) => {
                     const meta = OP_META[op];
                     const isSelected = selectedOps.includes(op);
+                    const isUnlocked = isOperationUnlocked(op);
 
                     return (
                       <motion.button
                         key={op}
                         id={`op-select-${op}`}
                         type="button"
-                        whileHover={{ scale: 1.015 }}
-                        whileTap={{ scale: 0.985 }}
+                        whileHover={isUnlocked ? { scale: 1.015 } : {}}
+                        whileTap={isUnlocked ? { scale: 0.985 } : {}}
+                        disabled={!isUnlocked}
                         onClick={() => handleToggleOperation(op)}
                         className={`
-                          h-16 rounded-2xl border p-3 flex items-center justify-between transition-all duration-300 relative cursor-pointer
+                          h-18 rounded-2xl border p-3 flex items-center justify-between transition-all duration-200 relative select-none
                           ${
-                            isSelected
-                              ? `${meta.color} bg-slate-900 border-opacity-100 shadow-lg shadow-slate-950/45`
-                              : 'bg-slate-950/20 border-slate-800/60 text-slate-500 opacity-60 hover:opacity-85'
+                            !isUnlocked
+                              ? 'bg-slate-950/40 border-slate-900/40 text-slate-600 cursor-not-allowed opacity-45'
+                              : isSelected
+                              ? `${meta.color} bg-slate-900 border-opacity-100 shadow-lg shadow-slate-950/45 cursor-pointer`
+                              : 'bg-slate-950/20 border-slate-800/60 text-slate-500 opacity-80 hover:opacity-100 cursor-pointer'
                           }
                         `}
                       >
-                        <div className="flex items-center gap-2.5">
-                          {/* Visual Indicator Checkbox */}
+                        <div className="flex items-center gap-2.5 w-[82%] text-left">
+                          {/* Visual Indicator Checkbox or Lock */}
                           <div
-                            className={`h-4.5 w-4.5 rounded-md flex items-center justify-center border text-xxs font-bold transition-all duration-200
+                            className={`h-4.5 w-4.5 rounded-md flex items-center justify-center border text-[9px] font-bold transition-all duration-200 shrink-0
                               ${
-                                isSelected
+                                !isUnlocked
+                                  ? 'border-slate-800 bg-slate-950/50 text-slate-600'
+                                  : isSelected
                                   ? 'bg-slate-100 border-transparent text-slate-900 scale-105'
                                   : 'border-slate-700/60'
                               }
                             `}
                           >
-                            {isSelected && '✓'}
+                            {!isUnlocked ? (
+                              <Lock className="h-2.5 w-2.5 text-slate-600" />
+                            ) : (
+                              isSelected ? '✓' : ''
+                            )}
                           </div>
-                          <span className="text-sm font-bold tracking-tight text-left capitalize">
-                            {meta.name}
-                          </span>
+                          
+                          <div className="flex flex-col items-start leading-none gap-1 overflow-hidden">
+                            <span className={`text-xs sm:text-xs font-bold tracking-tight text-left capitalize truncate w-full ${!isUnlocked ? 'text-slate-600' : 'text-slate-100'}`}>
+                              {meta.name}
+                            </span>
+                            <span className="text-[8px] font-mono font-medium text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap w-full block">
+                              {isUnlocked ? 'Discipline Active' : OP_UNLOCKS[op].desc}
+                            </span>
+                          </div>
                         </div>
                         
-                        <span className="text-xl font-mono font-extrabold select-none opacity-80">
+                        <span className={`text-base font-mono font-extrabold select-none shrink-0 ${!isUnlocked ? 'text-slate-800' : 'text-slate-400'}`}>
                           {meta.symbol}
                         </span>
                       </motion.button>
